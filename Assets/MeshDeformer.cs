@@ -3,7 +3,6 @@ using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-[RequireComponent(typeof(MeshFilter))]
 
 public class MeshDeformer : MonoBehaviour
 {
@@ -28,60 +27,69 @@ public class MeshDeformer : MonoBehaviour
     public Material material;
     [Tooltip("Sprite that will be used placed on mesh")]
     public Sprite sprite;
+    [Tooltip("Additional sprite size")]
+    public float AdditionalSize = 0f;
 
-    /*
-    [FormerlySerializedAs("material")] public Material Material;
-    [FormerlySerializedAs("sprite")] public Sprite Sprite;
-    */
+    private bool collided = false;
+    private Vector3 bulletDirection;
 
-    void Start()
+    private void Update()
     {
-        deformingMesh = GetComponent<MeshFilter>().mesh;
-        meshvertices = deformingMesh.vertices;
+        if (!collided)
+            bulletDirection = gameObject.GetComponent<Rigidbody>().velocity.normalized;
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+        collided = true;
         Vector3 direction = new Vector3();
-
-        if (tags.Length == 0 || Array.IndexOf(tags, collision.gameObject.tag) != -1)
+        if (collision.gameObject != gameObject)
         {
-            int count = 0;
-            for (int i = 0; i < meshvertices.Length; i++)
+            deformingMesh = collision.gameObject.GetComponent<MeshFilter>().mesh;
+            meshvertices = deformingMesh.vertices;
+               
+            if (tags.Length == 0 || Array.IndexOf(tags, collision.gameObject.tag) != -1)
             {
-                for (int j = 0; j < collision.contacts.Length; j++)
+                int count = 0;
+                for (int i = 0; i < meshvertices.Length; i++)
                 {
-                    Vector3 point = collision.contacts[j].point;
-                    Vector3 point2 = transform.TransformPoint(meshvertices[i]);
-                    direction = (transform.position - point2).normalized;
-                    float distance = Vector3.Distance(point, transform.TransformPoint(meshvertices[i]));
-                    if (distance < radius)
+                    for (int j = 0; j < collision.contacts.Length; j++)
                     {
-                        count++;
-                        Vector3 deformate = point2 + direction * (radius - distance) * multiply;
-                        meshvertices[i] = transform.InverseTransformPoint(deformate);
+                        Vector3 point = collision.contacts[j].point;
+                        Vector3 point2 = collision.gameObject.transform.TransformPoint(meshvertices[i]);
+                        //Debug.DrawLine(point, point2, Color.red, 10f);
+                        direction = bulletDirection; //(collision.gameObject.transform.position - point2).normalized;
+                        float distance = Vector3.Distance(point, collision.gameObject.transform.TransformPoint(meshvertices[i]));
+                        if (distance < radius)
+                        {
+                            count++;
+                            float temp = Mathf.Sin((radius - distance) / radius * (90 * Mathf.PI / 180));
+                            Vector3 deformate = point2 + direction * temp * multiply;
+                            meshvertices[i] = collision.gameObject.transform.InverseTransformPoint(deformate);
+                        }
                     }
                 }
-            }
-            deformingMesh.vertices = meshvertices;
-            deformingMesh.RecalculateNormals();
-            Debug.Log(count);
+                deformingMesh.vertices = meshvertices;
+                deformingMesh.RecalculateNormals();
+                Debug.Log(count);
 
-            decal = new GameObject("Decal");
-            decal.transform.parent = transform;
-            decal.transform.position = collision.contacts[0].point;
-            decal.transform.localScale = decal.transform.localScale * radius;
-            decal.transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
-            //decal.transform.rotation = new Quaternion(90,90,90,0);
-            Decal decalscript = decal.AddComponent<Decal>();
-            decalscript.Material = material;
-            decalscript.Sprite = sprite;
-            decalscript.MaxAngle = 180f;
-            decalscript.Offset = 0.05f;
-            decalscript.LayerMask = layermask;
-            decalscript.BuildAndSetDirty();
+                //Updating mesh collider
+                //GetComponent<MeshCollider>().sharedMesh = deformingMesh;
+
+                decal = new GameObject("Decal");
+                decal.transform.parent = collision.gameObject.transform;
+                decal.transform.position = collision.contacts[0].point;
+                decal.transform.localScale = decal.transform.localScale * (radius + AdditionalSize);
+                decal.transform.LookAt(collision.gameObject.transform);
+                //decal.transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+                Decal decalscript = decal.AddComponent<Decal>();
+                decalscript.Material = material;
+                decalscript.Sprite = sprite;
+                decalscript.MaxAngle = 180f;
+                decalscript.Offset = 0.005f;
+                decalscript.LayerMask = layermask;
+                decalscript.BuildAndSetDirty();
+            }
         }
-        //Updating mesh collider
-        //GetComponent<MeshCollider>().sharedMesh = deformingMesh;
     }
 }
