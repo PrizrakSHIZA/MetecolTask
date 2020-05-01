@@ -60,7 +60,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\BulletCrater.cs" />
     <Compile Include="Assets\DecalSystem\Plugins\DecalSystem\Decal.cs" />
     <Compile Include="Assets\DecalSystem\Plugins\DecalSystem\Helpers\DecalBuilder.cs" />
     <Compile Include="Assets\DecalSystem\Plugins\DecalSystem\Helpers\DecalUtils.cs" />
@@ -69,7 +68,6 @@
     <Compile Include="Assets\DecalSystem\Plugins\DecalSystem\Helpers\PolygonUtils.cs" />
     <Compile Include="Assets\DecalSystem\Plugins\DecalSystem\Helpers\TerrainUtils.cs" />
     <Compile Include="Assets\MeshDeformer.cs" />
-    <Compile Include="Assets\MeshDeformerOLD.cs" />
     <Reference Include="Unity.TextMeshPro.Editor">
       <HintPath>C:/Program Files/UnityProjects/Metecol/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
