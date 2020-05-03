@@ -81,7 +81,7 @@ public class MeshDeformer : MonoBehaviour
 
                 //Updating mesh collider
                 if(UpdateCollider)
-                    GetComponent<MeshCollider>().sharedMesh = deformingMesh;
+                    collision.gameObject.GetComponent<MeshCollider>().sharedMesh = deformingMesh;
 
                 //adding decal
                 decal = new GameObject("Decal");
