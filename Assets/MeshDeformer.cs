@@ -82,10 +82,10 @@ public class MeshDeformer : MonoBehaviour
         point = avgPoint;
         point2 = collision.gameObject.transform.TransformPoint(meshvertices[i]);
         direction = bulletDirection;
-        distance = /*(point - collision.gameObject.transform.TransformPoint(meshvertices[i])).sqrMagnitude;*/  Vector3.Distance(point, collision.gameObject.transform.TransformPoint(meshvertices[i]));
-        if (distance < radius)
+        distance = (point - collision.gameObject.transform.TransformPoint(meshvertices[i])).sqrMagnitude; //Vector3.Distance(point, collision.gameObject.transform.TransformPoint(meshvertices[i]));
+        if (distance < radius * radius)
         {
-            temp = Mathf.Sin((radius - distance) / (radius) * (90 * Mathf.Deg2Rad));
+            temp = Mathf.Sin((radius - Mathf.Sqrt(distance)) / (radius) * (90 * Mathf.Deg2Rad));
             deformate = point2 + direction * temp * multiply;
             meshvertices[i] = collision.gameObject.transform.InverseTransformPoint(deformate);
         }
