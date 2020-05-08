@@ -33,6 +33,11 @@ public class MeshDeformer : MonoBehaviour
     private bool collided = false;
     private Vector3 bulletDirection;
 
+    Vector3 point, point2, deformate, avgPoint = new Vector3(0, 0, 0), direction = new Vector3();
+
+    float distance, temp;
+
+
     private void Update()
     {
         if (!collided)
@@ -42,7 +47,6 @@ public class MeshDeformer : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         collided = true;
-        Vector3 direction = new Vector3();
         if (collision.gameObject != gameObject)
         {
             deformingMesh = collision.gameObject.GetComponent<MeshFilter>().mesh;
@@ -50,9 +54,6 @@ public class MeshDeformer : MonoBehaviour
                
             if (tags.Length == 0 || Array.IndexOf(tags, collision.gameObject.tag) != -1)
             {
-                int count = 0;
-                Vector3 point, point2, deformate, avgPoint = new Vector3(0,0,0);
-                float distance, temp;
                 //calculation average coordinates of all contact points
                 for (int i = 0; i < collision.contacts.Length; i++)
                 {
@@ -62,41 +63,47 @@ public class MeshDeformer : MonoBehaviour
 
                 for (int i = 0; i < meshvertices.Length; i++)
                 {
-                    point = avgPoint;
-                    point2 = collision.gameObject.transform.TransformPoint(meshvertices[i]);
-                    direction = bulletDirection;
-                    distance = Vector3.Distance(point, collision.gameObject.transform.TransformPoint(meshvertices[i]));
-                    if (distance < radius)
-                    {
-                        count++;
-                        temp = Mathf.Sin((radius - distance) / radius * (90 * Mathf.PI / 180));
-                        deformate = point2 + direction * temp * multiply;
-                        meshvertices[i] = collision.gameObject.transform.InverseTransformPoint(deformate);
-                    }
-
+                    CalculatePoint(collision, i);
                 }
                 deformingMesh.vertices = meshvertices;
                 deformingMesh.RecalculateNormals();
-                Debug.Log(count);
 
                 //Updating mesh collider
                 if(UpdateCollider)
                     collision.gameObject.GetComponent<MeshCollider>().sharedMesh = deformingMesh;
 
                 //adding decal
-                decal = new GameObject("Decal");
-                decal.transform.parent = collision.gameObject.transform;
-                decal.transform.position = collision.contacts[0].point;
-                decal.transform.localScale = decal.transform.localScale * (radius + AdditionalSize);
-                decal.transform.LookAt(collision.gameObject.transform);
-                Decal decalscript = decal.AddComponent<Decal>();
-                decalscript.Material = material;
-                decalscript.Sprite = sprite;
-                decalscript.MaxAngle = 180f;
-                decalscript.Offset = 0.005f;
-                decalscript.LayerMask = layermask;
-                decalscript.BuildAndSetDirty();
+                PlaceDecal(collision);
             }
         }
+    }
+    public void CalculatePoint(Collision collision, int i)
+    {
+        point = avgPoint;
+        point2 = collision.gameObject.transform.TransformPoint(meshvertices[i]);
+        direction = bulletDirection;
+        distance = /*(point - collision.gameObject.transform.TransformPoint(meshvertices[i])).sqrMagnitude;*/  Vector3.Distance(point, collision.gameObject.transform.TransformPoint(meshvertices[i]));
+        if (distance < radius)
+        {
+            temp = Mathf.Sin((radius - distance) / (radius) * (90 * Mathf.Deg2Rad));
+            deformate = point2 + direction * temp * multiply;
+            meshvertices[i] = collision.gameObject.transform.InverseTransformPoint(deformate);
+        }
+    }
+
+    public void PlaceDecal(Collision collision)
+    {
+        decal = new GameObject("Decal");
+        decal.transform.parent = collision.gameObject.transform;
+        decal.transform.position = collision.contacts[0].point;
+        decal.transform.localScale = decal.transform.localScale * (radius + AdditionalSize);
+        decal.transform.LookAt(collision.gameObject.transform);
+        Decal decalscript = decal.AddComponent<Decal>();
+        decalscript.Material = material;
+        decalscript.Sprite = sprite;
+        decalscript.MaxAngle = 180f;
+        decalscript.Offset = 0.005f;
+        decalscript.LayerMask = layermask;
+        decalscript.BuildAndSetDirty();
     }
 }
