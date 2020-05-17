@@ -34,14 +34,18 @@ public class MeshDeformer : MonoBehaviour
     private Vector3 bulletDirection;
 
     Vector3 point, point2, deformate, avgPoint = new Vector3(0, 0, 0), direction = new Vector3();
-
+    Rigidbody rigitbody;
     float distance, temp;
 
+    private void Start()
+    {
+        rigitbody = gameObject.GetComponent<Rigidbody>();
+    }
 
     private void Update()
     {
         if (!collided)
-            bulletDirection = gameObject.GetComponent<Rigidbody>().velocity.normalized;
+            bulletDirection = rigitbody.velocity.normalized;
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -80,19 +84,13 @@ public class MeshDeformer : MonoBehaviour
     public void CalculatePoint(Collision collision, int i)
     {
         point = avgPoint;
-        Debug.DrawLine(new Vector3(0, 0, 0), point, Color.red, 20f);
         point2 = collision.gameObject.transform.TransformPoint(meshvertices[i]);
-        direction = (point2 - point).normalized;//bulletDirection;
+        direction = bulletDirection;
         distance = (point - collision.gameObject.transform.TransformPoint(meshvertices[i])).sqrMagnitude; //Vector3.Distance(point, collision.gameObject.transform.TransformPoint(meshvertices[i]));
         if (distance < radius * radius)
         {
-            //temp = Mathf.Sin((radius - Mathf.Sqrt(distance)) / (radius) * (90 * Mathf.Deg2Rad));
-            //deformate = point2 + direction * temp * multiply;
-
-            //deformate = point + direction * radius * multiply; Чому кожну координату окремо коли можна працювати з векторами?
-            deformate.x = point.x + direction.x * radius * multiply;
-            deformate.y = point.y + direction.y * radius * multiply;
-            deformate.z = point.z + direction.z * radius * multiply;
+            temp = (radius - distance) / (radius);
+            deformate = point2 + direction * temp * multiply;
             meshvertices[i] = collision.gameObject.transform.InverseTransformPoint(deformate);
         }
     }
