@@ -1,5 +1,6 @@
 ﻿using DecalSystem;
 using System;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -44,58 +45,75 @@ public class MeshDeformer : MonoBehaviour
 
     private void Update()
     {
-        if (!collided)
+        if(!collided)
             bulletDirection = rigitbody.velocity.normalized;
     }
 
     private void OnCollisionEnter(Collision collision)
     {
         collided = true;
-        if (collision.gameObject != gameObject)
+        //calculation average coordinates of all contact points
+        CalculateAvrgPoint(collision);
+
+        //Checking for another colliders near
+        Collider[] colliders = Physics.OverlapSphere(avgPoint, radius);
+
+        foreach (Collider collider in colliders)
         {
-            deformingMesh = collision.gameObject.GetComponent<MeshFilter>().mesh;
-            meshvertices = deformingMesh.vertices;
-               
-            if (tags.Length == 0 || Array.IndexOf(tags, collision.gameObject.tag) != -1)
+            if (collider.gameObject != gameObject)
             {
-                //calculation average coordinates of all contact points
-                for (int i = 0; i < collision.contacts.Length; i++)
+                deformingMesh = collider.gameObject.GetComponent<MeshFilter>().mesh;
+                meshvertices = deformingMesh.vertices;
+
+                if (tags.Length == 0 || Array.IndexOf(tags, collider.gameObject.tag) != -1)
                 {
-                    avgPoint += collision.contacts[i].point;
+                    //CalculateAvrgPoint(collision);
+                    Debug.Log(collider.gameObject.name);
+                    for (int i = 0; i < meshvertices.Length; i++)
+                    {
+                        CalculatePoint(collider.gameObject, i);
+                    }
+                    deformingMesh.vertices = meshvertices;
+                    deformingMesh.RecalculateNormals();
+
+                    //Updating mesh collider
+                    if (UpdateCollider)
+                        collider.gameObject.GetComponent<MeshCollider>().sharedMesh = deformingMesh;
+
                 }
-                avgPoint = avgPoint / collision.contacts.Length;
-
-                for (int i = 0; i < meshvertices.Length; i++)
-                {
-                    CalculatePoint(collision, i);
-                }
-                deformingMesh.vertices = meshvertices;
-                deformingMesh.RecalculateNormals();
-
-                //Updating mesh collider
-                if(UpdateCollider)
-                    collision.gameObject.GetComponent<MeshCollider>().sharedMesh = deformingMesh;
-
-                //adding decal
-                PlaceDecal(collision);
             }
         }
+        //adding decal
+        PlaceDecal(collision);
+        //destroy bullet
+        Destroy(gameObject);
+
     }
-    public void CalculatePoint(Collision collision, int i)
+
+    private void CalculateAvrgPoint(Collision collision)
+    {
+        for (int i = 0; i < collision.contacts.Length; i++)
+        {
+            avgPoint += collision.contacts[i].point;
+        }
+        avgPoint = avgPoint / collision.contacts.Length;
+    }
+
+    private void CalculatePoint(GameObject someobject, int i)
     {
         point = avgPoint;
-        point2 = collision.gameObject.transform.TransformPoint(meshvertices[i]);
+        point2 = someobject.transform.TransformPoint(meshvertices[i]);
         direction = bulletDirection;
-        distance = (point - collision.gameObject.transform.TransformPoint(meshvertices[i])).sqrMagnitude; //Vector3.Distance(point, collision.gameObject.transform.TransformPoint(meshvertices[i]));
-        if (distance < radius * radius)
+        distance = (point - someobject.transform.TransformPoint(meshvertices[i])).sqrMagnitude;
+        if(distance < radius * radius)
         {
-            temp = (radius - distance) / (radius);
+            temp = (radius * radius - distance) / (radius * radius);
             deformate = point2 + direction * temp * multiply;
-            meshvertices[i] = collision.gameObject.transform.InverseTransformPoint(deformate);
+            meshvertices[i] = someobject.transform.InverseTransformPoint(deformate);
         }
     }
 
-    public void PlaceDecal(Collision collision)
+    private void PlaceDecal(Collision collision)
     {
         decal = new GameObject("Decal");
         decal.transform.parent = collision.gameObject.transform;
